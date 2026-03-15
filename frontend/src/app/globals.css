@@ -1,0 +1,37 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary-text: #111827;
+  --color-secondary-text: #6B7280;
+  --color-accent: #000000;
+  --color-accent-hover: #1F2937;
+  --color-card-border: #E5E7EB;
+  --color-roast-accent: #FF5A5F;
+
+  --font-inter: var(--font-inter);
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #111827;
+}
+
+body {
+  color: var(--foreground);
+  background: #F5F6F7;
+  font-family: var(--font-inter), sans-serif;
+  overflow-x: hidden;
+}
+
+/* Base utility for smooth section transitions */
+.section-padding {
+  @apply py-16 px-6 md:py-24 md:px-12 mx-auto max-w-7xl;
+}
+
+/* Highlights */
+.text-gradient {
+  background: linear-gradient(to right, #8B5CF6, #EC4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
