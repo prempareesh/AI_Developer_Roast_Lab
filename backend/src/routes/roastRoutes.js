@@ -20,7 +20,7 @@ const upload = multer({
 
 router.post('/', generateRoast);
 router.post('/linkedin', generateLinkedInRoast);
-router.post('/resume', upload.single('resumeFile'), generateResumeRoast);
+router.post('/resume', upload.single('file'), generateResumeRoast);
 router.post('/battle', generateRoastBattle);
 
 module.exports = router;

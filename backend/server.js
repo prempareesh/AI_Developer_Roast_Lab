@@ -11,7 +11,6 @@ app.set('trust proxy', 1);
 app.use(cors({
     origin: [
         "https://githubroast2-0-frontend.onrender.com",
-        "https://githubroast-frontend-latest.onrender.com",
         "http://localhost:3000"
     ],
     credentials: true
@@ -71,6 +70,4 @@ app.use((err, req, res, next) => {
 });
 
 
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on ${PORT}`));

@@ -36,7 +36,7 @@ export default function ResumeSection() {
             setResult(null);
 
             const formData = new FormData();
-            formData.append('resumeFile', file);
+            formData.append('file', file);
 
             try {
                 const response = await API.post(`/api/roast/resume`,
