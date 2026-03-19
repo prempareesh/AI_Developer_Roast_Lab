@@ -11,6 +11,7 @@ app.set('trust proxy', 1);
 app.use(cors({
     origin: [
         "https://githubroast2-0-frontend.onrender.com",
+        "https://githubroast-frontend-latest.onrender.com",
         "http://localhost:3000"
     ],
     credentials: true
