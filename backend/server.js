@@ -3,30 +3,16 @@ const express = require('express');
 const cors = require('cors');
 
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5000;
 
 // Trust Proxy for Render/Nginx
 app.set('trust proxy', 1);
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',')
-    : [
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
-        'https://githubroast-frontend-latest.onrender.com'
-      ];
-
 app.use(cors({
-    origin: (origin, callback) => {
-        if (!origin || allowedOrigins.some(ao => ao === origin || ao === origin.replace(/\/$/, ""))) {
-            callback(null, true);
-        } else {
-            console.error(`CORS Blocked: ${origin}`);
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    origin: [
+        "https://githubroast2-0-frontend.onrender.com",
+        "http://localhost:3000"
+    ],
     credentials: true
 }));
 
