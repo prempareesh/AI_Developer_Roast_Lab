@@ -4,7 +4,19 @@ const { generateRoast, generateLinkedInRoast, generateResumeRoast, generateRoast
 
 const router = express.Router();
 
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ 
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB limit
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype === "application/pdf" || file.mimetype === "text/plain") {
+            cb(null, true);
+        } else {
+            cb(new Error("Only PDF and TXT files are allowed"), false);
+        }
+    }
+});
 
 router.post('/', generateRoast);
 router.post('/linkedin', generateLinkedInRoast);

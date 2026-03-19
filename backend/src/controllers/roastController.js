@@ -3,19 +3,17 @@ const { generateRoastFromAI, generateLinkedInRoastFromAI, generateResumeRoastFro
 const pdfParse = require('pdf-parse');
 const { db } = require('../config/firebaseAdmin');
 
+/* ----------------------- GITHUB ROAST ----------------------- */
+
 const generateRoast = async (req, res) => {
     try {
         let { username } = req.body;
 
         if (!username || typeof username !== 'string') {
-            return res.status(400).json({ status: 'error', error: 'GitHub username is required and must be a string' });
+            return res.status(400).json({ success: false, error: 'GitHub username is required' });
         }
 
-        username = username.trim().substring(0, 39); // Basic sanitization
-
-        if (!/^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i.test(username)) {
-            return res.status(400).json({ status: 'error', error: 'Invalid GitHub username format' });
-        }
+        username = username.trim().substring(0, 39);
 
         const [profileData, repos] = await Promise.all([
             getUserProfile(username),
@@ -28,15 +26,15 @@ const generateRoast = async (req, res) => {
         try {
             await db.collection('roasts').add({
                 username: profileData.login,
-                score: aiResponse.score,
+                score: aiResponse?.score || null,
                 createdAt: new Date()
             });
-        } catch (dbError) {
-            // Silently fail DB save to not interrupt user experience
+        } catch (err) {
+            console.warn("Firestore write skipped:", err.message);
         }
 
         return res.status(200).json({
-            status: 'success',
+            success: true,
             data: {
                 profile: {
                     username: profileData.login,
@@ -51,128 +49,198 @@ const generateRoast = async (req, res) => {
                 stats: {
                     totalStars: repoStats.totalStars,
                     totalForks: repoStats.totalForks,
-                    languageDistribution: repoStats.languageDistribution,
-                    topics: repoStats.topics
+                    languageDistribution: repoStats.languageDistribution || {},
+                    topics: repoStats.topics || []
                 },
-                roast: aiResponse.roast,
-                suggestions: aiResponse.suggestions,
-                score: aiResponse.score
+                roast: aiResponse?.roast || "No roast generated.",
+                suggestions: aiResponse?.suggestions || [],
+                score: aiResponse?.score || {
+                    codeActivity: 0,
+                    projectOriginality: 0,
+                    consistency: 0,
+                    finalScore: 0,
+                    verdict: "Unknown"
+                }
             }
         });
 
     } catch (error) {
-        const statusCode = error.message.includes('not found') ? 404 : 500;
-        return res.status(statusCode).json({ 
-            status: 'error', 
-            error: error.message || 'Internal Server Error' 
+        console.error("🔥 GitHub Roast Error:", error);
+        return res.status(500).json({
+            success: false,
+            error: error.message || "Internal Server Error"
         });
     }
 };
+
+/* ----------------------- LINKEDIN ROAST ----------------------- */
 
 const generateLinkedInRoast = async (req, res) => {
     try {
         let { profileUrl } = req.body;
-
+        
         if (!profileUrl || typeof profileUrl !== 'string') {
-            return res.status(400).json({ status: 'error', error: 'LinkedIn profile data or URL is required' });
+            return res.status(400).json({
+                success: false,
+                error: "LinkedIn profile URL is required"
+            });
         }
 
-        profileUrl = profileUrl.trim();
+        profileUrl = profileUrl.trim().substring(0, 500);
+
+        if (!profileUrl.toLowerCase().includes('linkedin.com/')) {
+            return res.status(400).json({
+                success: false,
+                error: "Invalid LinkedIn URL"
+            });
+        }
 
         const aiResponse = await generateLinkedInRoastFromAI(profileUrl);
 
         return res.status(200).json({
-            status: 'success',
+            success: true,
             data: {
-                summary: aiResponse.summary,
-                mainRoast: aiResponse.mainRoast,
-                analysis: aiResponse.analysis,
-                advice: aiResponse.advice,
-                closingRoast: aiResponse.closingRoast
+                summary: aiResponse?.summary || "",
+                mainRoast: aiResponse?.mainRoast || "No roast generated.",
+                analysis: aiResponse?.analysis || {},
+                advice: aiResponse?.advice || [],
+                closingRoast: aiResponse?.closingRoast || ""
             }
         });
 
     } catch (error) {
-        return res.status(500).json({ status: 'error', error: error.message || 'Internal Server Error' });
+        console.error("🔥 LinkedIn Roast Error:", error);
+        return res.status(500).json({
+            success: false,
+            error: error.message || "Internal Server Error"
+        });
     }
 };
 
+/* ----------------------- RESUME ROAST ----------------------- */
+
 const generateResumeRoast = async (req, res) => {
     try {
-        if (!req.file && (!req.body.resumeText || typeof req.body.resumeText !== 'string')) {
-            return res.status(400).json({ status: 'error', error: 'Resume file or text content is required' });
+
+        if (!req.file && !req.body.resumeText) {
+            return res.status(400).json({
+                success: false,
+                error: "Resume file or text is required"
+            });
         }
 
-        let resumeText = (req.body.resumeText || '').trim();
+        let resumeText = req.body.resumeText || "";
 
         if (req.file) {
-            if (req.file.mimetype === 'application/pdf') {
-                const pdfData = await pdfParse(req.file.buffer);
-                resumeText = pdfData.text;
-            } else if (req.file.mimetype === 'text/plain') {
-                resumeText = req.file.buffer.toString('utf8');
+            if (req.file.mimetype === "application/pdf") {
+                const pdf = await pdfParse(req.file.buffer);
+                resumeText = pdf.text;
+            } else if (req.file.mimetype === "text/plain") {
+                resumeText = req.file.buffer.toString();
             } else {
-                return res.status(400).json({ status: 'error', error: 'Unsupported file type. Please upload PDF or TXT.' });
+                return res.status(400).json({
+                    success: false,
+                    error: "Unsupported file type"
+                });
             }
         }
 
-        if (resumeText.length > 50000) {
-            resumeText = resumeText.substring(0, 50000); // Limit size for AI
-        }
+        // Limit resume text to prevent overwhelming AI provider
+        resumeText = resumeText.substring(0, 15000);
 
         const aiResponse = await generateResumeRoastFromAI(resumeText);
 
         return res.status(200).json({
-            status: 'success',
+            success: true,
             data: {
-                summary: aiResponse.summary,
-                mainRoast: aiResponse.mainRoast,
-                analysis: aiResponse.analysis,
-                advice: aiResponse.advice,
-                closingRoast: aiResponse.closingRoast
+                summary: aiResponse?.summary || "",
+                mainRoast: aiResponse?.mainRoast || "No roast generated.",
+                analysis: aiResponse?.analysis || {},
+                advice: aiResponse?.advice || [],
+                closingRoast: aiResponse?.closingRoast || ""
             }
         });
 
     } catch (error) {
-        return res.status(500).json({ status: 'error', error: error.message || 'Internal Server Error' });
+        console.error("🔥 Resume Roast Error:", error);
+        return res.status(500).json({
+            success: false,
+            error: error.message || "Internal Server Error"
+        });
     }
 };
 
+/* ----------------------- ROAST BATTLE ----------------------- */
+
 const generateRoastBattle = async (req, res) => {
     try {
-        let { username1, username2 } = req.body;
 
-        if (!username1 || !username2 || typeof username1 !== 'string' || typeof username2 !== 'string') {
-            return res.status(400).json({ status: 'error', error: 'Both GitHub usernames are required' });
+        let { username1, username2 } = req.body;
+        
+        if (!username1 || !username2) {
+            return res.status(400).json({
+                success: false,
+                error: "Both GitHub usernames are required"
+            });
         }
 
-        username1 = username1.trim().substring(0, 39);
-        username2 = username2.trim().substring(0, 39);
+        username1 = String(username1).trim().substring(0, 39);
+        username2 = String(username2).trim().substring(0, 39);
 
-        const [profileData1, repos1, profileData2, repos2] = await Promise.all([
+        const [profile1, repos1, profile2, repos2] = await Promise.all([
             getUserProfile(username1),
             getUserRepos(username1),
             getUserProfile(username2),
             getUserRepos(username2)
         ]);
-        
-        const repoStats1 = aggregateRepoStats(repos1);
-        const repoStats2 = aggregateRepoStats(repos2);
 
-        const aiResponse = await generateRoastBattleFromAI(profileData1, repoStats1, profileData2, repoStats2);
+        const stats1 = aggregateRepoStats(repos1);
+        const stats2 = aggregateRepoStats(repos2);
+
+        const aiResponse = await generateRoastBattleFromAI(profile1, stats1, profile2, stats2);
 
         return res.status(200).json({
-            status: 'success',
+            success: true,
             data: {
-                user1: { profile: profileData1, stats: repoStats1 },
-                user2: { profile: profileData2, stats: repoStats2 },
-                battle: aiResponse
+                battle: {
+                    winner: aiResponse?.winner || "No winner decided.",
+                    winnerScore: aiResponse?.winnerScore || 0,
+                    loserScore: aiResponse?.loserScore || 0,
+                    reason: aiResponse?.reason || aiResponse?.analysis || "",
+                    roast1: aiResponse?.roast1 || "",
+                    roast2: aiResponse?.roast2 || ""
+                },
+                user1: {
+                    profile: {
+                        username: profile1.login,
+                        name: profile1.name,
+                        avatarUrl: profile1.avatar_url,
+                        bio: profile1.bio,
+                        followers: profile1.followers,
+                        publicRepos: profile1.public_repos
+                    },
+                    stats: stats1
+                },
+                user2: {
+                    profile: {
+                        username: profile2.login,
+                        name: profile2.name,
+                        avatarUrl: profile2.avatar_url,
+                        bio: profile2.bio,
+                        followers: profile2.followers,
+                        publicRepos: profile2.public_repos
+                    },
+                    stats: stats2
+                }
             }
         });
 
     } catch (error) {
-        const statusCode = error.message.includes('not found') ? 404 : 500;
-        return res.status(statusCode).json({ status: 'error', error: error.message || 'Internal Server Error' });
+        console.error("🔥 Battle Roast Error:", error);
+        return res.status(500).json({
+            success: false,
+            error: error.message || "Internal Server Error"
+        });
     }
 };
 

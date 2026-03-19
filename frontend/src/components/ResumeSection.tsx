@@ -4,7 +4,8 @@ import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { FileText, Upload, Loader2 } from 'lucide-react';
 import SharedResultCard from './SharedResultCard';
-import axios from 'axios';
+import API from '@/lib/api';
+
 import { AnimatePresence } from 'framer-motion';
 
 const RESUME_LOADING_MESSAGES = [
@@ -38,12 +39,11 @@ export default function ResumeSection() {
             formData.append('resumeFile', file);
 
             try {
-                const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `http://${window.location.hostname}:5001` : 'http://localhost:5001');
-                const response = await axios.post(`${apiBaseUrl}/api/roast/resume`,
+                const response = await API.post(`/api/roast/resume`,
                     formData, {
                     headers: { 'Content-Type': 'multipart/form-data' }
                 });
-                setResult(response.data);
+                setResult(response.data?.data);
             } catch (error) {
                 console.error(error);
                 alert("Failed to roast. Please try again.");

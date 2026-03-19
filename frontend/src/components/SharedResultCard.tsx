@@ -63,12 +63,12 @@ export default function SharedResultCard({ title, summary, mainRoast, analysis, 
                             <Flame className="text-[#FF5A5F]" /> The Brutal Truth
                         </h3>
                         <div className="bg-[#FFF1F2] border border-[#FECDD3] rounded-2xl p-6 text-[#881337] leading-relaxed text-lg space-y-4">
-                            {mainRoast && mainRoast.map((paragraph, i) => (
+                            {mainRoast && Array.isArray(mainRoast) && mainRoast.map((paragraph, i) => (
                                 <p key={i}>{paragraph}</p>
                             ))}
                         </div>
                     </section>
-
+ 
                     {/* Profile Analysis Section */}
                     <section>
                         <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
@@ -86,6 +86,9 @@ export default function SharedResultCard({ title, summary, mainRoast, analysis, 
                                             <span>{str}</span>
                                         </li>
                                     ))}
+                                    {(!analysis?.strengths || analysis.strengths.length === 0) && (
+                                        <li className="text-[#15803D] opacity-60">No data found.</li>
+                                    )}
                                 </ul>
                             </div>
                             <div className="bg-[#FEF2F2] border border-[#FECACA] p-6 rounded-2xl">
@@ -99,32 +102,38 @@ export default function SharedResultCard({ title, summary, mainRoast, analysis, 
                                             <span>{wk}</span>
                                         </li>
                                     ))}
+                                    {(!analysis?.weaknesses || analysis.weaknesses.length === 0) && (
+                                        <li className="text-[#B91C1C] opacity-60">No data found.</li>
+                                    )}
                                 </ul>
                             </div>
                         </div>
                     </section>
-
+ 
                     {/* Career Advice Section */}
                     <section>
                         <h3 className="text-xl font-bold mb-4 text-[#10B981] flex items-center gap-2">
                             💡 How to Actually Overcome This
                         </h3>
                         <ul className="space-y-4">
-                            {advice && advice.map((suggestion, idx) => (
+                            {advice && Array.isArray(advice) && advice.map((suggestion, idx) => (
                                 <li key={idx} className="flex gap-3 text-[#4B5563] bg-[#F9FAFB] p-4 rounded-xl border border-[#E5E7EB]">
                                     <span className="font-bold text-[#10B981]">{idx + 1}.</span>
                                     <span>{suggestion}</span>
                                 </li>
                             ))}
+                            {(!advice || advice.length === 0) && (
+                                <li className="text-[#4B5563] opacity-60">No data found.</li>
+                            )}
                         </ul>
                     </section>
-
+ 
                     {/* Closing Roast Section */}
                     <section className="bg-black text-white p-6 rounded-2xl text-center shadow-lg border border-[#1F2937]">
                         <div className="flex justify-center mb-3 text-[#FF5A5F]">
                             <Skull className="w-8 h-8" />
                         </div>
-                        <p className="text-lg font-bold italic">"{closingRoast}"</p>
+                        <p className="text-lg font-bold italic">"{closingRoast || 'No verdict generated.'}"</p>
                     </section>
 
                 </div>

@@ -4,7 +4,8 @@ import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { Search, Loader2 } from 'lucide-react';
 import SharedResultCard from './SharedResultCard';
-import axios from 'axios';
+import API from '@/lib/api';
+
 import { AnimatePresence } from 'framer-motion';
 
 const LINKEDIN_LOADING_MESSAGES = [
@@ -44,18 +45,11 @@ export default function LinkedInSection() {
             setLoading(true);
             setResult(null);
             try {
-                const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `http://${window.location.hostname}:5001` : 'http://localhost:5001');
-                const response = await fetch(`${apiBaseUrl}/api/roast/linkedin`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        profileUrl: url
-                    })
+                const response = await API.post(`/api/roast/linkedin`, {
+                    profileUrl: url
                 });
-                const data = await response.json();
-                setResult(data);
+                setResult(response.data?.data);
+
             } catch (error) {
                 console.error(error);
                 alert("Failed to roast. Please try again.");

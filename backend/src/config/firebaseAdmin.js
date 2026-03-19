@@ -5,8 +5,9 @@ const admin = require('firebase-admin');
 // Or the default credentials if logged into gcloud/firebase CLI
 admin.initializeApp({
   credential: admin.credential.applicationDefault(),
-  projectId: 'ai-dev-roast-lab-123'
+  projectId: process.env.FIREBASE_PROJECT_ID || 'ai-dev-roast-lab-123'
 });
+
 
 const db = admin.firestore();
 

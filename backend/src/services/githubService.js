@@ -8,6 +8,7 @@ const GITHUB_API_URL = process.env.GITHUB_API_URL || 'https://api.github.com';
 const getHeaders = () => {
     const headers = {
         'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'AI-Roast-App'
     };
     if (process.env.GITHUB_TOKEN) {
         headers['Authorization'] = `token ${process.env.GITHUB_TOKEN}`;
@@ -27,10 +28,14 @@ const getUserProfile = async (username) => {
         });
         return response.data;
     } catch (error) {
-        if (error.response && error.response.status === 404) {
-            throw new Error(`GitHub user '${username}' not found.`);
+        if (error.response) {
+            if (error.response.status === 404) {
+                throw new Error(`GitHub user '${username}' not found.`);
+            } else if (error.response.status === 403) {
+                throw new Error('GitHub API rate limit exceeded. Please try again later.');
+            }
         }
-        throw new Error('Failed to fetch GitHub profile. Rate limit exceeded or API error.');
+        throw new Error('Failed to fetch GitHub profile. Either the API is down or the user is invalid.');
     }
 };
 
@@ -47,6 +52,10 @@ const getUserRepos = async (username) => {
         });
         return response.data;
     } catch (error) {
+        console.error("GitHub API error:", error.response?.data || error.message);
+        if (error.response?.status === 403) {
+            throw new Error('GitHub API rate limit exceeded. Repositories could not be fetched.');
+        }
         throw new Error('Failed to fetch GitHub repositories.');
     }
 };

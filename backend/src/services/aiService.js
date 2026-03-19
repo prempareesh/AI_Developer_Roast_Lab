@@ -651,23 +651,33 @@ const generateRoastBattleFromAI = async (u1Profile, u1Stats, u2Profile, u2Stats)
     }
 
     if (!useAntigravity && !useOpenAI && !useGroq && !useNvidia) {
+        // Pick winner based on stars or repos even in mock
+        const score1 = (u1Stats.totalStars * 5) + u1Stats.originalRepoCount;
+        const score2 = (u2Stats.totalStars * 5) + u2Stats.originalRepoCount;
+        const winner = score1 >= score2 ? u1Profile.login : u2Profile.login;
+        const loser = score1 >= score2 ? u2Profile.login : u1Profile.login;
+
         return {
-            winner: u1Profile.login,
-            reason: `${u1Profile.login} wins simply because ${u2Profile.login} has more READMEs than working projects.`,
+            winner: winner,
+            reason: `${winner} dominates because ${loser}'s GitHub looks like a tutorial graveyard with ${score1 >= score2 ? u2Stats.originalRepoCount : u1Stats.originalRepoCount} barely-touched repos.`,
             roast1: `${u1Profile.login} looks like they wrote all their code in Notepad.`,
             roast2: `${u2Profile.login} seems to copy-paste most tutorials on YouTube.`
         };
     }
 
-    const systemPrompt = `You are an expert developer and brutally honest judge. Analyze two GitHub profiles and declare a winner in a 'roast battle'. Make the verdict funny, slightly brutal, but clear. Give a customized short roast for each developer too.
-Be sure to use plenty of relevant and funny emojis throughout the roasts and verdict to make it more expressive! 🤡⚔️🔥
-Return the response in this exact JSON format:
-{
-  "winner": "Username of the winner",
-  "reason": "Funny reason why they won (1-2 sentences)",
-  "roast1": "Brutal short roast of the first developer",
-  "roast2": "Brutal short roast of the second developer"
-}`;
+    const systemPrompt = `You are an expert developer and brutally honest judge. Analyze two GitHub profiles and declare a WINNER in a 'roast battle'. 
+    
+    IMPORTANT: The "winner" is the BETTER, more IMPRESSIVE developer. The "loser" is the one who gets roasted harder for their poor stats or bad coding habits. 
+
+    Make the verdict funny, slightly brutal, but clear. Give a customized short roast for each developer too.
+    Be sure to use plenty of relevant and funny emojis throughout the roasts and verdict to make it more expressive! 🤡⚔️🔥
+    Return the response in this exact JSON format:
+    {
+      "winner": "Username of the winner (the superior dev)",
+      "reason": "Funny reason why they won the battle and are superior (1-2 sentences)",
+      "roast1": "Brutal short roast of the first developer",
+      "roast2": "Brutal short roast of the second developer"
+    }`;
 
     const u1Lang = Object.keys(u1Stats.languageDistribution).join(', ') || 'None';
     const u2Lang = Object.keys(u2Stats.languageDistribution).join(', ') || 'None';

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import axios from 'axios';
+import API from '@/lib/api';
+
 import ResultCard from '@/components/ResultCard';
 import { Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -40,13 +41,16 @@ export default function RoastPage() {
                 setLoading(true);
                 setError(null);
 
-                const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || (typeof window !== 'undefined' ? `http://${window.location.hostname}:5001` : 'http://localhost:5001');
-
-                const response = await axios.post(`${apiBaseUrl}/api/roast`, {
+                const response = await API.post(`/api/roast`, {
                     username: username
                 });
 
-                setResult(response.data);
+
+                if (response?.data?.data) {
+                    setResult(response.data.data);
+                } else {
+                    throw new Error("Invalid response structure from server");
+                }
             } catch (err: any) {
                 setError(err.response?.data?.error || 'Failed to generate roast. The GitHub user might not exist or the API is overwhelmed.');
             } finally {
